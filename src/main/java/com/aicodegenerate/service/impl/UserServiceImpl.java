@@ -3,8 +3,13 @@ package com.aicodegenerate.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.aicodegenerate.common.ResultUtils;
+import com.aicodegenerate.config.CosClientConfig;
 import com.aicodegenerate.exception.BusinessException;
 import com.aicodegenerate.exception.ErrorCode;
+import com.aicodegenerate.exception.ThrowUtils;
+import com.aicodegenerate.manager.CosManager;
+import com.aicodegenerate.model.dto.user.UserChangePasswordRequest;
 import com.aicodegenerate.model.dto.user.UserQueryRequest;
 import com.aicodegenerate.model.enums.UserRoleEnum;
 import com.aicodegenerate.model.vo.LoginUserVO;
@@ -14,12 +19,18 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.aicodegenerate.model.entity.User;
 import com.aicodegenerate.mapper.UserMapper;
+import com.qcloud.cos.model.PutObjectResult;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.aicodegenerate.constant.UserConstant.USER_LOGIN_STATE;
@@ -30,7 +41,13 @@ import static com.aicodegenerate.constant.UserConstant.USER_LOGIN_STATE;
  * @author 陈
  */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements UserService {
+    @Resource
+    private CosManager cosManager;
+
+    @Resource
+    private CosClientConfig cosClientConfig;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -184,6 +201,69 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }
 
-
-
+    /**
+     * 用户上传头像
+     * @param multipartFile
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public boolean userUploadAvatar(MultipartFile multipartFile, User loginUser) {
+        // 文件目录
+        String originalFilename = multipartFile.getOriginalFilename();
+        String fileSuffix = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : "";
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        String filepath = String.format("/aicodegenerate/avatar/%s/%s%s", loginUser.getId(), uuid, fileSuffix);
+        File file = null;
+        try {
+            // 上传文件
+            file = File.createTempFile(filepath, null);
+            multipartFile.transferTo(file);
+            PutObjectResult object = cosManager.putObject(filepath, file);
+            ThrowUtils.throwIf(object == null, ErrorCode.SYSTEM_ERROR, "上传失败");
+            // 返回可访问的地址
+            filepath = cosClientConfig.getHost() + filepath;
+            loginUser.setUserAvatar(filepath);
+            return this.updateById(loginUser);
+        } catch (Exception e) {
+            log.error("file upload error, filepath = " + filepath, e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+        } finally {
+            if (file != null) {
+                // 删除临时文件
+                boolean delete = file.delete();
+                if (!delete) {
+                    log.error("file delete error, filepath = {}", filepath);
+                }
+            }
+        }
+    }
+    @Override
+    public boolean userChangePassword(UserChangePasswordRequest userChangePasswordRequest) {
+        String oldPassword = userChangePasswordRequest.getOldPassword();
+        String newPassword = userChangePasswordRequest.getNewPassword();
+        String checkPassword = userChangePasswordRequest.getCheckPassword();
+        Long id = userChangePasswordRequest.getId();
+        //把原密码加密查询数据库，判断原密码是否正确
+        String encryptOldPassword = getEncryptPassword(oldPassword);
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq("id", id);
+        queryWrapper.eq("userPassword",encryptOldPassword);
+        long count = this.count(queryWrapper);
+        if (count < 1){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"原密码错误");
+        }
+        //判断新密码和确认密码是否一致
+        if (!newPassword.equals(checkPassword)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"两次密码不一致");
+        }
+        //把新密码加密后存入数据库
+        String encryptNewPassword = getEncryptPassword(newPassword);
+        User user = new User();
+        user.setId(id);
+        user.setUserPassword(encryptNewPassword);
+        return this.updateById(user);
+    }
 }

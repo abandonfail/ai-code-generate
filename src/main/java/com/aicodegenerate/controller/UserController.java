@@ -15,16 +15,11 @@ import com.aicodegenerate.model.vo.UserVO;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import com.aicodegenerate.model.entity.User;
 import com.aicodegenerate.service.UserService;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 /**
@@ -183,4 +178,28 @@ public class UserController {
         return ResultUtils.success(userVOPage);
     }
 
+    /**
+     * 用户上传头像
+     * @param multipartFile
+     * @return
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<Boolean> userUploadAvatar(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean result = userService.userUploadAvatar(multipartFile, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 修改密码
+     * @param userChangePasswordRequest
+     * @return
+     */
+    @PostMapping("/changePassword")
+    public BaseResponse<Boolean> userChangePassword(@RequestBody UserChangePasswordRequest userChangePasswordRequest){
+        ThrowUtils.throwIf(userChangePasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        boolean res =  userService.userChangePassword(userChangePasswordRequest);
+        return ResultUtils.success(res);
+    }
 }

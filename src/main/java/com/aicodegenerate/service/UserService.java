@@ -1,5 +1,6 @@
 package com.aicodegenerate.service;
 
+import com.aicodegenerate.model.dto.user.UserChangePasswordRequest;
 import com.aicodegenerate.model.dto.user.UserQueryRequest;
 import com.aicodegenerate.model.vo.LoginUserVO;
 import com.aicodegenerate.model.vo.UserVO;
@@ -7,6 +8,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.aicodegenerate.model.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -87,4 +89,19 @@ public interface UserService extends IService<User> {
      * @return
      */
     QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 用户上传头像
+     * @param multipartFile
+     * @param loginUser
+     * @return
+     */
+    boolean userUploadAvatar(MultipartFile multipartFile, User loginUser);
+
+    /**
+     * 用户修改密码
+     * @param userChangePasswordRequest
+     * @return
+     */
+    boolean userChangePassword(UserChangePasswordRequest userChangePasswordRequest);
 }
