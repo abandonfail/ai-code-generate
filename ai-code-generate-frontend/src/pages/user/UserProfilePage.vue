@@ -103,6 +103,7 @@ import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { updateUser, userChangePassword, userUploadAvatar } from '@/api/userController'
 import router from '@/router'
 import dayjs from 'dayjs';
+import request from '@/request'
 
 const loginUserStore = useLoginUserStore()
 
@@ -155,13 +156,18 @@ const pwdFormRef = ref()
 // 头像上传
 const handleAvatarUpload = async (file: File) => {
   try {
-    const res = await userUploadAvatar(file)
+    const formData = new FormData()
+    formData.append('file', file) // 注意：字段名要与后端参数名一致，如 @RequestPart("file")
+
+    const res = await request<API.BaseResponseBoolean>('/user/upload/avatar', {
+      method: 'POST',
+      data: formData,
+      // 不设置 headers，会自动设置 multipart/form-data
+    })
 
     if (res.data.code === 0 && res.data.data) {
-      // 假设返回的头像地址在 res.data.data 中
       loginUserStore.loginUser.userAvatar = res.data.data
       message.success('头像上传成功')
-      // 刷新页面
       window.location.reload()
     } else {
       message.error('头像上传失败：' + (res?.data?.message || '未知错误'))
@@ -171,8 +177,10 @@ const handleAvatarUpload = async (file: File) => {
     message.error('上传失败，请重试')
   }
 
-  return false // 阻止默认上传行为
+  return false
 }
+
+
 
 // 修改信息提交
 const onUpdateInfo = async () => {

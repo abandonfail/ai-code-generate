@@ -142,37 +142,13 @@ export async function updateUser(body: API.UserUpdateRequest, options?: { [key: 
 }
 
 /** 此处后端没有提供注释 POST /user/upload/avatar */
-export async function userUploadAvatar(
-  file: File,
-  body: Record<string, any> = {},
-  options?: { [key: string]: any }
-) {
-  const formData = new FormData()
-
-  // 添加文件
-  if (file) {
-    formData.append('file', file)
-  }
-
-  // 添加其他字段
-  Object.entries(body).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      if (typeof value === 'object' && !(value instanceof File)) {
-        if (Array.isArray(value)) {
-          value.forEach(v => formData.append(key, v || ''))
-        } else {
-          formData.append(key, JSON.stringify(value))
-        }
-      } else {
-        formData.append(key, value)
-      }
-    }
-  })
-
+export async function userUploadAvatar(body: {}, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/user/upload/avatar', {
     method: 'POST',
-    data: formData,
-    // 不手动设置 Content-Type，让请求库自动设置 multipart/form-data
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
     ...(options || {}),
   })
 }
