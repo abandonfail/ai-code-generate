@@ -12,8 +12,9 @@ spring:
     redis:
       port: 6379
       host: localhost
-      password: ossbar
+      password:
       database: 12
+      ttl: 3600
       timeout: 5000
   session:
     store-type: redis
@@ -26,6 +27,10 @@ server:
   port: 8080
   servlet:
     context-path: /api
+  # cookie 30 天过期
+  session:
+    cookie:
+      max-age: 2592000
 
 # springdoc-openapi
 springdoc:
