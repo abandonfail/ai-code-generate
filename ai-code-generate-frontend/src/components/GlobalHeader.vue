@@ -10,6 +10,7 @@
           </div>
         </RouterLink>
       </a-col>
+
       <!-- 中间：导航菜单 -->
       <a-col flex="auto">
         <a-menu
@@ -19,6 +20,7 @@
           @click="handleMenuClick"
         />
       </a-col>
+
       <!-- 右侧：用户操作区域 -->
       <a-col>
         <div class="user-login-status">
@@ -63,10 +65,10 @@ import { LogoutOutlined, HomeOutlined } from '@ant-design/icons-vue'
 
 const loginUserStore = useLoginUserStore()
 const router = useRouter()
-// 当前选中菜单
-const selectedKeys = ref<string[]>(['/'])
-// 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, next) => {
+const selectedKeys = ref<string[]>([router.currentRoute.value.path])
+
+// 路由变化时更新选中菜单
+router.afterEach((to) => {
   selectedKeys.value = [to.path]
 })
 
@@ -95,7 +97,7 @@ const originItems = [
   },
 ]
 
-// 过滤菜单项
+// 根据权限过滤菜单项
 const filterMenus = (menus = [] as MenuProps['items']) => {
   return menus?.filter((menu) => {
     const menuKey = menu?.key as string
@@ -109,20 +111,16 @@ const filterMenus = (menus = [] as MenuProps['items']) => {
   })
 }
 
-// 展示在菜单的路由数组
 const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
 
-// 处理菜单点击
 const handleMenuClick: MenuProps['onClick'] = (e) => {
   const key = e.key as string
   selectedKeys.value = [key]
-  // 跳转到对应页面
   if (key.startsWith('/')) {
     router.push(key)
   }
 }
 
-// 退出登录
 const doLogout = async () => {
   const res = await userLogout()
   if (res.data.code === 0) {
@@ -139,8 +137,15 @@ const doLogout = async () => {
 
 <style scoped>
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  width: 100%;
   background: #fff;
   padding: 0 24px;
+  box-shadow: 0 2px 8px #f0f1f2;
 }
 
 .header-left {
