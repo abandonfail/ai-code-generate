@@ -27,7 +27,7 @@ server:
   port: 8080
   servlet:
     context-path: /api
-  # cookie 30 天过期
+  # cookie
   session:
     cookie:
       max-age: 2592000
