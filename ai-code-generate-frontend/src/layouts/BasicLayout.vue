@@ -23,8 +23,10 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
 
 .main-content {
   width: 100%;
-  padding: 0;
+  padding: 24px;
+  padding-top: 88px; /* 避开固定导航栏 */
   background: none;
   margin: 0;
+  min-height: calc(100vh - 64px);
 }
 </style>
