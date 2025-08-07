@@ -1,5 +1,6 @@
 package com.aicodegenerate.service;
 
+import com.aicodegenerate.model.dto.app.AppAddRequest;
 import com.aicodegenerate.model.dto.app.AppQueryRequest;
 import com.aicodegenerate.model.entity.User;
 import com.aicodegenerate.model.vo.AppVO;
@@ -25,6 +26,15 @@ public interface AppService extends IService<App> {
      * @return
      */
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+
+    /**
+     * 创建应用
+     *
+     * @param appAddRequest 应用信息
+     * @param loginUser 登录用户
+     * @return 应用 ID
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     /**
      * 应用部署
